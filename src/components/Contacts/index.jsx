@@ -1,41 +1,37 @@
 import { nanoid } from "nanoid";
-import { Component } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./Contact.module.scss";
 
-export default class Contacts extends Component {
-  constructor() {
-    super();
-    this.state = {
-      contacts: [],
-      name: "",
-      number: "",
-      filter: "",
-    };
-  }
+const Contacts = () => {
+  const [contacts, setContacts] = useState([]);
+  const [name, setName] = useState("");
+  const [number, setNumber] = useState("");
+  const [filter, setFilter] = useState("");
 
-  componentDidMount() {
+  useEffect(() => {
     const savedContacts = localStorage.getItem('contacts');
     if (savedContacts) {
-      this.setState({ contacts: JSON.parse(savedContacts) });
+      setContacts(JSON.parse(savedContacts));
     }
-  }
+  }, []);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.contacts !== this.state.contacts) {
-      localStorage.setItem('contacts', JSON.stringify(this.state.contacts));
-    }
-  }
+  useEffect(() => {
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+  }, [contacts]);
 
-  handleChange = (ev) => {
+  const handleChange = (ev) => {
     const { name, value } = ev.currentTarget;
-    this.setState({
-      [name]: value,
-    });
+    if (name === "name") {
+      setName(value);
+    } else if (name === "number") {
+      setNumber(value);
+    } else if (name === "filter") {
+      setFilter(value);
+    }
   };
 
-  handleSubmit = (ev) => {
+  const handleSubmit = (ev) => {
     ev.preventDefault();
-    const { name, number, contacts } = this.state;
     const isDuplicate = contacts.some(
       (contact) => contact.name.toLowerCase() === name.toLowerCase()
     );
@@ -44,6 +40,7 @@ export default class Contacts extends Component {
       alert(`Contact with the name "${name}" already exists.🫣😵‍💫`);
       return;
     }
+
     const isValidNumber = /^[0-9]+$/.test(number);
 
     if (!isValidNumber) {
@@ -51,82 +48,80 @@ export default class Contacts extends Component {
       return;
     }
 
-    this.setState((prev) => {
-      const list = [...prev.contacts];
-      list.push({
-        id: nanoid(),
-        name: this.state.name,
-        number: this.state.number,
-      });
-      return { contacts: list, name: "", number: "" };
-    });
+    setContacts((prevContacts) => [
+      ...prevContacts,
+      { id: nanoid(), name, number },
+    ]);
+    setName("");
+    setNumber("");
   };
 
-  handleDelete = (id) => {
-    this.setState((prev) => ({
-      contacts: prev.contacts.filter((contact) => contact.id !== id),
-    }));
-  };
-
-  render() {
-    const nameId = nanoid();
-    const numId = nanoid();
-    const searchId = nanoid();
-    return (
-      <>
-        <form className={styles.form} onSubmit={this.handleSubmit}>
-          <label htmlFor={nameId}>Name</label>
-          <input
-            id={nameId}
-            type="text"
-            name="name"
-            required
-            value={this.state.name}
-            onChange={this.handleChange}
-          />
-          <label htmlFor={numId}>Phone number</label>
-          <input
-            id={numId}
-            type="tel"
-            name="number"
-            required
-            value={this.state.number}
-            onChange={this.handleChange}
-            pattern="[0-9]*"
-            title="The phone number must contain only digits."
-          />
-          <button type="submit">Add contact</button>
-        </form>
-        <h1>Contacts</h1>
-        <form className={styles.searchForm}>
-          <label htmlFor={searchId}>Find contact</label>
-          <input
-            type="text"
-            id={searchId}
-            name="filter"
-            value={this.state.filter}
-            onChange={this.handleChange}
-          />
-        </form>
-        <ul className={styles.list}>
-          {this.state.contacts
-            .filter((el) =>
-              el.name.toLowerCase().includes(this.state.filter.toLowerCase())
-            )
-            .map((contact) => (
-              <li key={contact.id}>
-                {contact.name} - {contact.number}
-                <button
-                  type="button"
-                  className={styles.deleteButton}
-                  onClick={() => this.handleDelete(contact.id)}
-                >
-                  Delete
-                </button>
-              </li>
-            ))}
-        </ul>
-      </>
+  const handleDelete = (id) => {
+    setContacts((prevContacts) =>
+      prevContacts.filter((contact) => contact.id !== id)
     );
-  }
-}
+  };
+
+  const nameId = nanoid();
+  const numId = nanoid();
+  const searchId = nanoid();
+
+  return (
+    <>
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <label htmlFor={nameId}>Name</label>
+        <input
+          id={nameId}
+          type="text"
+          name="name"
+          required
+          value={name}
+          onChange={handleChange}
+        />
+        <label htmlFor={numId}>Phone number</label>
+        <input
+          id={numId}
+          type="tel"
+          name="number"
+          required
+          value={number}
+          onChange={handleChange}
+          pattern="[0-9]*"
+          title="The phone number must contain only digits."
+        />
+        <button type="submit">Add contact</button>
+      </form>
+      <h1>Contacts</h1>
+      <form className={styles.searchForm}>
+        <label htmlFor={searchId}>Find contact</label>
+        <input
+          type="text"
+          id={searchId}
+          name="filter"
+          value={filter}
+          onChange={handleChange}
+        />
+      </form>
+      <ul className={styles.list}>
+        {contacts
+          .filter((el) =>
+            el.name.toLowerCase().includes(filter.toLowerCase())
+          )
+          .map((contact) => (
+            <li key={contact.id}>
+              {contact.name} - {contact.number}
+              <button
+                type="button"
+                className={styles.deleteButton}
+                onClick={() => handleDelete(contact.id)}
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+      </ul>
+    </>
+  );
+};
+
+export default Contacts;
